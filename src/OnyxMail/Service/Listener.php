@@ -2,6 +2,9 @@
 namespace OnyxMail\Service;
 
 use Zend\Mail;
+use Zend\Mail\Transport\Sendmail as SendmailTransport;
+use Zend\Mail\Transport\Smtp as SmtpTransport;
+use Zend\Mail\Transport\SmtpOptions;
 use Zend\EventManager\EventManagerInterface;
 use Zend\EventManager\ListenerAggregateInterface;
 
@@ -23,8 +26,25 @@ class Listener implements ListenerAggregateInterface
     public function __construct(\Zend\ServiceManager\ServiceManager $sm) {
         $this->serviceManager = $sm;
         $config = $sm->get('config');
-        \Zend\Debug\Debug::dump($config);
-        exit();
+        $mailConfig = $config['onyx_mail'];
+        if(isset($mailConfig['transport_method'])){
+            $method = $mailConfig['transport_method'];
+        }else{
+            $method = "sendmail";
+        }
+        switch(sendmail){
+            case "sendmail":
+                $this->transportAdapter = new SendmailTransport();
+                break;
+            case "smtp":
+                $this->transportAdapter = new SmtpTransport();
+                $options   = new SmtpOptions($mailConfig['smtp']);
+                $this->transportAdapter->setOptions($options);
+                break;
+            default:
+                $this->transportAdapter = new SendmailTransport();
+                break;
+        }
     }
 
     /**
@@ -46,11 +66,13 @@ class Listener implements ListenerAggregateInterface
     }
     
     protected function sendMessage($e){
-        $mail = new Mail\Message();
-        $mail->setBody('This is the text of the mail.')
+        $message = new Mail\Message();
+        $message->setBody('This is the text of the mail.')
              ->setFrom('somebody@example.com', 'Some Sender')
-             ->addTo('somebody_else@example.com', 'Some Recipient')
+             ->addTo('paul.headington@colensobbdo.co.nz', 'Paul')
              ->setSubject('TestSubject');
+        
+        $this->transportAdapter->send($message);
         
     }
     
