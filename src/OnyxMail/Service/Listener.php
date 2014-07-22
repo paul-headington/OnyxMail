@@ -1,12 +1,13 @@
 <?php
 namespace OnyxMail\Service;
 
+use Zend\Mail;
 use Zend\EventManager\EventManagerInterface;
 use Zend\EventManager\ListenerAggregateInterface;
 
 class Listener implements ListenerAggregateInterface
 {
-    private $logTable;
+    private $transportAdapter;
     
     /**
      * @var \Zend\ServiceManager\ServiceManager 
@@ -21,6 +22,9 @@ class Listener implements ListenerAggregateInterface
     
     public function __construct(\Zend\ServiceManager\ServiceManager $sm) {
         $this->serviceManager = $sm;
+        $config = $sm->get('config');
+        \Zend\Debug\Debug::dump($config);
+        exit();
     }
 
     /**
@@ -29,7 +33,7 @@ class Listener implements ListenerAggregateInterface
     public function attach(EventManagerInterface $events)
     {
         $sharedEvents      = $events->getSharedManager();
-        $this->listeners[] = $sharedEvents->attach('Onyx\Service\EventManger', 'logError', array($this, 'logError'), 100);
+        $this->listeners[] = $sharedEvents->attach('Onyx\Service\EventManger', 'sendMessage', array($this, 'sendMessage'), 100);
     }
 
     public function detach(EventManagerInterface $events)
@@ -39,6 +43,15 @@ class Listener implements ListenerAggregateInterface
                 unset($this->listeners[$index]);
             }
         }
+    }
+    
+    protected function sendMessage($e){
+        $mail = new Mail\Message();
+        $mail->setBody('This is the text of the mail.')
+             ->setFrom('somebody@example.com', 'Some Sender')
+             ->addTo('somebody_else@example.com', 'Some Recipient')
+             ->setSubject('TestSubject');
+        
     }
     
 }
