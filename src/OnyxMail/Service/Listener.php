@@ -5,6 +5,8 @@ use Zend\Mail;
 use Zend\Mail\Transport\Sendmail as SendmailTransport;
 use Zend\Mail\Transport\Smtp as SmtpTransport;
 use Zend\Mail\Transport\SmtpOptions;
+use Zend\Mime\Message as MimeMessage;
+use Zend\Mime\Part as MimePart;
 use Zend\EventManager\EventManagerInterface;
 use Zend\EventManager\ListenerAggregateInterface;
 
@@ -16,6 +18,8 @@ class Listener implements ListenerAggregateInterface
      * @var \Zend\ServiceManager\ServiceManager 
      */
     protected $serviceManager;
+        
+    protected $mailDefaults = array();
 
 
     /**
@@ -31,8 +35,13 @@ class Listener implements ListenerAggregateInterface
             $method = $mailConfig['transport_method'];
         }else{
             $method = "sendmail";
+        }        
+        
+        if(isset($mailConfig['defaults'])){
+            $this->mailDefaults = $mailConfig['defaults'];
         }
-        switch(sendmail){
+        
+        switch($method){
             case "sendmail":
                 $this->transportAdapter = new SendmailTransport();
                 break;
@@ -64,15 +73,83 @@ class Listener implements ListenerAggregateInterface
             }
         }
     }
+     
     
-    protected function sendMessage($e){
-        $message = new Mail\Message();
-        $message->setBody('This is the text of the mail.')
-             ->setFrom('somebody@example.com', 'Some Sender')
-             ->addTo('paul.headington@colensobbdo.co.nz', 'Paul')
-             ->setSubject('TestSubject');
+    public function sendMessage($e){   
+        $params = $e->getParams();
         
-        $this->transportAdapter->send($message);
+        if(isset($params['body'])){
+            $body = $params['body'];
+        }else{
+            // "no body";
+            return false;
+        }
+        
+        if(isset($params['subject'])){
+            $subject = $params['subject'];
+        }else{
+            // "no subject";
+            return false;
+        }
+        
+        if(isset($params['to'])){
+            $to = $params['to'];
+        }else{
+            // "no to";
+            return false;
+        }
+        
+        if(isset($params['from'])){
+            $from = $params['from'];
+        }else{
+            $from = $this->mailDefaults['from'];
+        }
+        
+        $textBody = strip_tags($body);
+        
+        $text = new MimePart($textBody);
+        $text->type = "text/plain";
+
+        $html = new MimePart($body);
+        $html->type = "text/html";
+        
+        $mimeMessage = new MimeMessage();
+        $mimeMessage->setParts(array($html, $text));
+        
+        
+        $message = new Mail\Message();
+        $message->setBody($mimeMessage)
+             ->setFrom($from[0], $from[1])
+             ->addTo($to[0], $to[1])
+             ->setSubject($subject);
+        
+        $message->getHeaders()->get('content-type')->setType('multipart/alternative'); //this sets the text version as an alt
+        
+        
+        if(isset($params['cc'])){
+            $message->setCc($params['cc']);
+        }
+        
+        if(isset($params['bcc'])){
+            $message->setBcc($params['bcc']);
+        }
+        
+        if(isset($params['replyto'])){
+            $message->addReplyTo($params['replyto'][0], $params['replyto'][1]);
+        }
+        
+        if(isset($params['encoding'])){
+            $message->setEncoding($params['encoding']);
+        }else{
+            $message->setEncoding($this->mailDefaults['encoding']);
+        }
+        
+        
+        try{
+            $this->transportAdapter->send($message);
+        }catch(Exception $e){
+            
+        }
         
     }
     
