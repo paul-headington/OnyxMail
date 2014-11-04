@@ -19,7 +19,7 @@
     },
     "autoload": {
         "psr-0" : {
-            "Logger": "src/"
+            "OnyxMail": "src/"
         },
         "classmap": [
             "./Module.php"
