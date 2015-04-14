@@ -119,7 +119,7 @@ class Listener implements ListenerAggregateInterface
         
         $message = new Mail\Message();
         $message->setBody($mimeMessage)
-             ->setFrom($from[0], $from[1])
+             ->setFrom($from['address'], $from['name'])
              ->addTo($to[0], $to[1])
              ->setSubject($subject);
         
@@ -148,7 +148,8 @@ class Listener implements ListenerAggregateInterface
         try{
             $this->transportAdapter->send($message);
         }catch(Exception $e){
-            
+            //echo $e->getMessage();
+            //exit();
         }
         
     }
