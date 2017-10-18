@@ -105,6 +105,18 @@ class Listener implements ListenerAggregateInterface
             $from = $this->mailDefaults['from'];
         }
 
+        if(isset($params['ical'])){
+            $iCalText = $params['ical'];
+        }else{
+            $iCalText = null;
+        }
+
+        if(isset($params['header'])){
+            $header = Mail\Headers::fromString($params['header']);
+        }else{
+            $header = null;
+        }
+
         $textBody = strip_tags($body);
 
         $text = new MimePart($textBody);
@@ -121,13 +133,23 @@ class Listener implements ListenerAggregateInterface
 
         //$mimeMessage->setParts(array($html, $text));
         $mimeMessage->addPart($html);
+        if ($iCalText) {
 
+            $iCal = new MimePart($iCalText);
+            $iCal->type = 'text/calendar';
+            $iCal->encoding = \Zend\Mime\Mime::ENCODING_8BIT;
+            $iCal->charset = 'UTF-8';
+            $mimeMessage->addPart($iCal);
+        }
 
         $message = new Mail\Message();
+        if ($header) {
+            $message->setHeaders($header);
+        }
         $message->setBody($mimeMessage)
-             ->setFrom($from['address'], $from['name'])
-             ->addTo($to[0], $to[1])
-             ->setSubject($subject);
+            ->setFrom($from['address'], $from['name'])
+            ->addTo($to[0], $to[1])
+            ->setSubject($subject);
 
         //$message->getHeaders()->get('content-type')->setType('multipart/alternative'); //this sets the text version as an alt
         //$message->getHeaders()->setTransferEncoding('UTF-8');
