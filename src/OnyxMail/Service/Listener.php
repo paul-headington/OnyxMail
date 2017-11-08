@@ -134,11 +134,11 @@ class Listener implements ListenerAggregateInterface
         //$mimeMessage->setParts(array($html, $text));
         $mimeMessage->addPart($html);
         if ($iCalText) {
-
             $iCal = new MimePart($iCalText);
-            $iCal->type = 'text/calendar';
-            $iCal->encoding = \Zend\Mime\Mime::ENCODING_8BIT;
-            $iCal->charset = 'UTF-8';
+            $iCal->type = 'message/rfc822';
+            $iCal->disposition = \Zend\Mime\Mime::DISPOSITION_ATTACHMENT;
+            $iCal->filename = 'calendar.ics';
+            $iCal->id = 'calendar.ics';
             $mimeMessage->addPart($iCal);
         }
 
